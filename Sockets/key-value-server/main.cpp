@@ -150,6 +150,40 @@ std::string handleCommand(const Command& command,
         return "OK\n";
     }
 
+    if (command.name == "EXIST") {
+        if (command.args.size() != 1) {
+            return "ERROR EXIST requires key\n";
+        }
+        const std::string& key{command.args[0]};
+        return (store.find(key) != store.end() ? "TRUE\n" : "FALSE\n");
+    }
+
+    if (command.name == "CLEAR") {
+        if (!command.args.empty()) {
+            return "ERROR CLEAR takes no arguments\n";
+        }
+        store.clear();
+        return "OK\n";
+    }
+
+    if (command.name == "KEYS") {
+        if (!command.args.empty()) {
+            return "ERROR KEYS takes no arguments\n";
+        }
+        if (store.empty()) {
+            return "EMPTY\n";
+        }
+        std::string result = "KEY[";
+        bool first = true;
+        for (const auto& kv : store) {
+            if (!first) result += " ";
+            result += kv.first;
+            first = false;
+        }
+        result += "]\n";
+        return result;
+    }
+
     if (command.name == "COUNT") {
         if (!command.args.empty()) {
             return "ERROR COUNT takes no arguments\n";
