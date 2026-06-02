@@ -49,6 +49,14 @@ int main() {
         std::cout << "Connected to server on port " << PORT << ".\n";
         std::cout << "Type messages. Type Ctrl+D to quit.\n\n";
 
+        // Read connection greeting from the server first
+        char greeting_buffer[BUFFER_SIZE]{};
+        ssize_t greeting_received{recv(client_fd, greeting_buffer, BUFFER_SIZE - 1, 0)};
+        if (greeting_received > 0) {
+            greeting_buffer[greeting_received] = '\0';
+            std::cout << "Server: " << greeting_buffer;
+        }
+
         std::string line{};
 
         while (std::getline(std::cin, line)) {
