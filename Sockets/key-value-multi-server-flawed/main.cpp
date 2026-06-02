@@ -5,6 +5,8 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 #include <unistd.h>
@@ -12,10 +14,17 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+/* This key-value server uses one thread per client that connects on the socket. A mutual exclusion lock
+ * ensures that only one thread accesses the store at a time.
+ */
+
+
+
 struct Command {
     std::string name{};
     std::vector<std::string> args{};
 };
+
 
 void closeSocket(int fd) {
     if (fd >= 0) {
@@ -99,7 +108,7 @@ Command parseCommand(const std::string& message) {
 
 // Apply a Command to the current store.
 std::string handleCommand(const Command& command,
-                           std::unordered_map<std::string, std::string>& store) {
+                          std::unordered_map<std::string, std::string>& store) {
     if (command.name.empty()) {
         return "ERROR empty command\n";
     }
@@ -112,7 +121,6 @@ std::string handleCommand(const Command& command,
         const std::string& key{command.args[0]};
         const std::string& value{command.args[1]};
 
-        // Associate the key with the value in the store.
         store[key] = value;
         return "OK\n";
     }
@@ -121,17 +129,15 @@ std::string handleCommand(const Command& command,
         if (command.args.size() != 1) {
             return "ERROR GET requires key\n";
         }
-
         const std::string& key{command.args[0]};
-        // Attempt to find the key in the map.
         auto it{store.find(key)};
 
         if (it == store.end()) {
             return "NOT_FOUND\n";
         }
 
-        // it->first is the key; it->second is the value.
         return "VALUE " + it->second + "\n";
+
     }
 
     if (command.name == "DELETE") {
@@ -140,9 +146,7 @@ std::string handleCommand(const Command& command,
         }
 
         const std::string& key{command.args[0]};
-        // erase() returns the number of keys that were removed.
         std::size_t removed{store.erase(key)};
-
         if (removed == 0) {
             return "NOT_FOUND\n";
         }
@@ -155,7 +159,9 @@ std::string handleCommand(const Command& command,
             return "ERROR COUNT takes no arguments\n";
         }
 
-        return "COUNT " + std::to_string(store.size()) + "\n";
+        std::size_t size{store.size()};
+        return "COUNT " + std::to_string(size) + "\n";
+
     }
 
     if (command.name == "QUIT") {
@@ -278,7 +284,8 @@ int main(int argc, char* argv[]) {
                   << ntohs(client_addr.sin_port)
                   << '\n';
 
-        handleClient(client_fd, store);
+        std::thread clientThread{handleClient, client_fd, std::ref(store)};
+        clientThread.detach();
     }
 
     closeSocket(server_fd);
