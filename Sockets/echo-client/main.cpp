@@ -4,96 +4,105 @@
 #include <stdexcept>
 #include <string>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <unistd.h>
 
 namespace {
-    constexpr int PORT{9090};
-    constexpr int BUFFER_SIZE{1024};
+constexpr int PORT{9090};
+constexpr int BUFFER_SIZE{1024};
 
-    void close_socket(int fd) {
-        if (fd >= 0) {
-            close(fd);
-        }
-    }
-
-    void fail(const std::string& message) {
-        throw std::runtime_error{message + ": " + std::strerror(errno)};
-    }
+void close_socket(int fd) {
+  if (fd >= 0) {
+    close(fd);
+  }
 }
 
+void fail(const std::string &message) {
+  throw std::runtime_error{message + ": " + std::strerror(errno)};
+}
+} // namespace
+
 int main() {
-    try {
-        int client_fd{socket(AF_INET, SOCK_STREAM, 0)};
-        if (client_fd < 0) {
-            fail("socket failed");
-        }
+  try {
+    int client_fd{socket(AF_INET, SOCK_STREAM, 0)};
+    if (client_fd < 0) {
+      fail("socket failed");
+    }
 
-        sockaddr_in server_addr{};
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(PORT);
+    sockaddr_in server_addr{};
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
 
-        if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0) {
-            close_socket(client_fd);
-            fail("invalid server address");
-        }
+    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0) {
+      close_socket(client_fd);
+      fail("invalid server address");
+    }
 
-        if (connect(
-                client_fd,
-                reinterpret_cast<sockaddr*>(&server_addr),
-                sizeof(server_addr)
-            ) < 0) {
-            close_socket(client_fd);
-            fail("connect failed");
-        }
+    if (connect(client_fd, reinterpret_cast<sockaddr *>(&server_addr),
+                sizeof(server_addr)) < 0) {
+      close_socket(client_fd);
+      fail("connect failed");
+    }
 
-        std::cout << "Connected to server on port " << PORT << ".\n";
-        std::cout << "Type messages. Type Ctrl+D to quit.\n\n";
+    // Check if the server sent an error message (like "ERROR too many clients") or disconnected immediately
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000; // 100ms timeout
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    FD_SET(client_fd, &read_fds);
 
-        // Read connection greeting from the server first
-        char greeting_buffer[BUFFER_SIZE]{};
-        ssize_t greeting_received{recv(client_fd, greeting_buffer, BUFFER_SIZE - 1, 0)};
-        if (greeting_received > 0) {
-            greeting_buffer[greeting_received] = '\0';
-            std::cout << "Server: " << greeting_buffer;
-        }
-
-        std::string line{};
-
-        while (std::getline(std::cin, line)) {
-            line += '\n';
-
-            ssize_t bytes_sent{send(client_fd, line.c_str(), line.size(), 0)};
-
-            if (bytes_sent < 0) {
-                std::cerr << "send failed: " << std::strerror(errno) << "\n";
-                break;
-            }
-
-            char buffer[BUFFER_SIZE]{};
-
-            ssize_t bytes_received{recv(client_fd, buffer, BUFFER_SIZE - 1, 0)};
-
-            if (bytes_received < 0) {
-                std::cerr << "recv failed: " << std::strerror(errno) << "\n";
-                break;
-            }
-
-            if (bytes_received == 0) {
-                std::cout << "Server disconnected.\n";
-                break;
-            }
-
-            buffer[bytes_received] = '\0';
-
-            std::cout << "Server echoed: " << buffer;
-        }
-
+    int activity = select(client_fd + 1, &read_fds, NULL, NULL, &tv);
+    if (activity > 0) {
+      char check_buf[BUFFER_SIZE]{};
+      ssize_t bytes_received = recv(client_fd, check_buf, BUFFER_SIZE - 1, 0);
+      if (bytes_received > 0) {
+        check_buf[bytes_received] = '\0';
+        std::cout << check_buf;
         close_socket(client_fd);
-    }
-    catch (const std::exception& ex) {
-        std::cerr << "Client error: " << ex.what() << "\n";
-        return 1;
+        return 0;
+      }
     }
 
-    return 0;
+    std::cout << "Connected to server on port " << PORT << ".\n";
+    std::cout << "Type messages. Type Ctrl+D to quit.\n\n";
+
+    std::string line{};
+
+    while (std::getline(std::cin, line)) {
+      line += '\n';
+
+      ssize_t bytes_sent{send(client_fd, line.c_str(), line.size(), 0)};
+
+      if (bytes_sent < 0) {
+        std::cerr << "send failed: " << std::strerror(errno) << "\n";
+        break;
+      }
+
+      char buffer[BUFFER_SIZE]{};
+
+      ssize_t bytes_received{recv(client_fd, buffer, BUFFER_SIZE - 1, 0)};
+
+      if (bytes_received < 0) {
+        std::cerr << "recv failed: " << std::strerror(errno) << "\n";
+        break;
+      }
+
+      if (bytes_received == 0) {
+        std::cout << "Server disconnected.\n";
+        break;
+      }
+
+      buffer[bytes_received] = '\0';
+
+      std::cout << "Server echoed: " << buffer;
+    }
+
+    close_socket(client_fd);
+  } catch (const std::exception &ex) {
+    std::cerr << "Client error: " << ex.what() << "\n";
+    return 1;
+  }
+
+  return 0;
 }
