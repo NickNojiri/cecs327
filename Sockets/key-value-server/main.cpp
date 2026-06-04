@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <algorithm> 
 
 struct Command {
     std::string name{};
@@ -173,14 +174,25 @@ std::string handleCommand(const Command& command,
         if (store.empty()) {
             return "EMPTY\n";
         }
-        std::string result = "KEY[";
-        bool first = true;
-        for (const auto& kv : store) {
-            if (!first) result += " ";
-            result += kv.first;
-            first = false;
+
+        std::vector<std::string> keys{};
+        keys.reserve(store.size());
+
+        for (const auto& [key, _] : store) {
+            keys.push_back(key);
+        }
+
+        std::sort(keys.begin(), keys.end());
+
+        std::string result{"KEY["};
+        for (std::size_t i = 0; i < keys.size(); ++i) {
+            if (i > 0) {
+                result += ' ';
+            }
+            result += keys[i];
         }
         result += "]\n";
+
         return result;
     }
 

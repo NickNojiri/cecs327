@@ -8,6 +8,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <algorithm>
 
 void closeSocket(int fd) {
     if (fd >= 0) {
