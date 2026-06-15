@@ -67,3 +67,12 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# IDE / editor config
+.idea/
+.vscode/
+
+# Python virtual environments
+.venv/
+venv/
+__pycache__/
