@@ -1,5 +1,4 @@
-#include "RemoteKeyValueStore.h"
-
+#include "RemoteList.h"
 #include <algorithm>
 #include <iostream>
 #include <sstream>
@@ -16,8 +15,6 @@ void printMenu() {
     std::cout << std::string(60, '=') << '\n';
 }
 
-// Option 1: read "key value" lines from the user, PUT each pair into the store,
-// then print all of the keys currently in the store.
 void optionAddPairs(RemoteKeyValueStore& store) {
     std::cout << "\n--- Option 1: Add Pairs to the Store ---\n";
     std::cout << "Enter \"key value\" pairs, one per line (empty line to finish):\n";
@@ -31,7 +28,6 @@ void optionAddPairs(RemoteKeyValueStore& store) {
             break;
         }
 
-        // Split the line on whitespace: first token is the key, second is the value.
         std::istringstream input{line};
         std::string key;
         std::string value;
@@ -60,14 +56,11 @@ void optionAddPairs(RemoteKeyValueStore& store) {
         std::cout << "  [No keys]\n";
         return;
     }
-    for (const std::string& key : allKeys.value()) {
-        std::cout << "  - " << key << '\n';
+    for (const std::string& k : allKeys.value()) {
+        std::cout << "  - " << k << '\n';
     }
 }
 
-// Option 2: print all of the store's values in alphabetical order. There is no
-// "values" operation on the server, so we ask for the keys, GET each value, build
-// a list, sort it, and print it.
 void optionPrintValues(RemoteKeyValueStore& store) {
     std::cout << "\n--- Option 2: Print Store Values ---\n";
 
@@ -83,20 +76,20 @@ void optionPrintValues(RemoteKeyValueStore& store) {
 
     std::vector<std::string> values;
     values.reserve(allKeys->size());
-    for (const std::string& key : allKeys.value()) {
-        auto value = store.get(key);
+    for (const std::string& k : allKeys.value()) {
+        auto value = store.get(k);
         if (value.has_value()) {
             values.push_back(value.value());
         } else {
-            std::cout << "  [Warning] no value for key: " << key << '\n';
+            std::cout << "  [Warning] no value for key: " << k << '\n';
         }
     }
 
     std::sort(values.begin(), values.end());
 
     std::cout << "\nValues in alphabetical order:\n";
-    for (const std::string& value : values) {
-        std::cout << "  " << value << '\n';
+    for (const std::string& v : values) {
+        std::cout << "  " << v << '\n';
     }
 }
 

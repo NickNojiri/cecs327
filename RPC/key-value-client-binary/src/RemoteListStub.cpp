@@ -17,7 +17,7 @@ RemoteListStub::~RemoteListStub() {
 }
 
 // Sends a request for the given opcode and arguments, by framing the request according to the
-// application protocol, then reads and parses the framed response.
+// application protocol.
 std::optional<BinaryResponse> RemoteListStub::sendRequest(RequestOpcode opcode,
                                                           const std::vector<std::uint8_t>& arguments) {
     if (!isConnected()) {

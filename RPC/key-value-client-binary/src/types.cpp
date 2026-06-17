@@ -67,8 +67,8 @@ bool appendString(std::vector<std::uint8_t>& payload, const std::string& value) 
 }
 
 // Builds a message buffer according to the application protocol: first, an integer length
-// of the payload; then the bytes of the payload, which is itself a 1-byte opcode and a
-// variable number of encoded arguments.
+// of the payload; then the bytes of the payload, which is itself a 1-byte opcode and variable
+// number of encoded arguments.
 std::vector<std::uint8_t> frameRequest(RequestOpcode opcode, const std::vector<std::uint8_t>& arguments) {
     std::vector<std::uint8_t> framed{};
     const std::uint32_t payloadSize{static_cast<std::uint32_t>(1 + arguments.size())};
@@ -94,12 +94,10 @@ std::optional<BinaryResponse> parseResponseMessage(const std::vector<std::uint8_
     return response;
 }
 
-// True only if the server answered OK. Used by put() and exists().
 bool parseStatusResponse(const BinaryResponse& response) {
     return response.opcode == ResponseOpcode::Ok;
 }
 
-// The string of a VALUE response, or null for anything else (including NOT_FOUND).
 std::optional<std::string> parseValueResponse(const BinaryResponse& response) {
     if (response.opcode != ResponseOpcode::Value) {
         return std::nullopt;
@@ -128,8 +126,6 @@ std::optional<std::size_t> parseCountResponse(const BinaryResponse& response) {
     return static_cast<std::size_t>(count.value());
 }
 
-// Decodes a KEYS response: an integer count, followed by that many length-prefixed
-// strings. Returns null if the response is malformed or not a KEYS response.
 std::optional<std::vector<std::string>> parseKeysResponse(const BinaryResponse& response) {
     if (response.opcode != ResponseOpcode::Keys) {
         return std::nullopt;

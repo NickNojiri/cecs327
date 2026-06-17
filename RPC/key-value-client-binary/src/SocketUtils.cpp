@@ -74,8 +74,8 @@ bool readExact(int fd, void* buffer, std::size_t byteCount) {
     return true;
 }
 
-// Receive a message on the socket, extract its length, then read that many
-// bytes into a buffer.
+// Receive a message on the socket, extract its length, then read
+// that many byte into a buffer.
 std::optional<std::vector<std::uint8_t>> readMessage(int fd) {
     std::uint32_t networkLength{};
     if (!readExact(fd, &networkLength, sizeof(networkLength))) {

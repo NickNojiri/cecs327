@@ -24,7 +24,7 @@ bool appendString(std::vector<std::uint8_t>& payload, const std::string& value) 
     return true;
 }
 
-// Builds a payload consisting solely of an opcode (OK and NOT_FOUND use this).
+// Builds a payload consisting solely of an opcode.
 std::vector<std::uint8_t> buildStatusResponse(ResponseOpcode opcode) {
     return {static_cast<std::uint8_t>(opcode)};
 }
@@ -54,19 +54,12 @@ std::vector<std::uint8_t> buildCountResponse(std::size_t count) {
     return payload;
 }
 
-// Builds a payload for a KEYS response: an integer count of the keys, followed by
-// each key encoded as a length-prefixed string.
+// Builds a payload for a KEYS response: count followed by each key as a length-prefixed string.
 std::vector<std::uint8_t> buildKeysResponse(const std::vector<std::string>& keys) {
-    if (keys.size() > static_cast<std::size_t>(std::numeric_limits<std::int32_t>::max())) {
-        return buildErrorResponse("too many keys");
-    }
-
     std::vector<std::uint8_t> payload{static_cast<std::uint8_t>(ResponseOpcode::Keys)};
     appendInt32(payload, static_cast<std::int32_t>(keys.size()));
     for (const std::string& key : keys) {
-        if (!appendString(payload, key)) {
-            return buildErrorResponse("key too large");
-        }
+        appendString(payload, key);
     }
     return payload;
 }

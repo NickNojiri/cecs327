@@ -42,8 +42,10 @@ struct MessageReader {
 
         std::uint8_t networkValue{};
         std::memcpy(&networkValue, buffer.data() + offset, sizeof(networkValue));
+        // Keep track that we just read 4 more bytes.
         offset += sizeof(networkValue);
 
+        // Convert the 4-byte value from network order to host order.
         return networkValue;
     }
 

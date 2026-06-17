@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-// Request opcodes -- these must match enum class RequestOpcode in the server's
-// RequestHandlers.h.
 enum class RequestOpcode : std::uint8_t {
     Put    = 1,
     Get    = 2,
@@ -18,8 +16,6 @@ enum class RequestOpcode : std::uint8_t {
     Keys   = 6
 };
 
-// Response opcodes -- these must match enum class ResponseOpcode in the server's
-// ResponseHandlers.h.
 enum class ResponseOpcode : std::uint8_t {
     Ok       = 64,
     Value    = 65,
@@ -33,6 +29,7 @@ struct BinaryResponse {
     ResponseOpcode opcode;
     std::vector<std::uint8_t> payload;
 };
+
 
 bool appendInt32(std::vector<std::uint8_t>& payload, std::int32_t value);
 bool appendString(std::vector<std::uint8_t>& payload, const std::string& value);

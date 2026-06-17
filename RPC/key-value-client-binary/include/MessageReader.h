@@ -4,10 +4,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-
-// Decodes integers and strings out of a binary response payload (the bytes after
-// the message length). Used to read the arguments of a response once its opcode
-// is known.
 struct MessageReader {
     const std::vector<std::uint8_t>& buffer;
     std::size_t offset{0};
