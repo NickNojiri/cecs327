@@ -480,7 +480,9 @@ int main(int argc, char* argv[]) {
 
     // Run registration (and the heartbeat loop it now contains) on its own
     // thread so it can keep pinging the name server while main() accepts clients.
-    // We keep the thread joinable (not detached) for the lifetime of the server.
+    // The assignment says not to detach it, so we leave it joinable; main() below
+    // never returns (its accept loop runs until the process is killed), so this
+    // thread runs for the whole life of the server and its destructor never runs.
     std::thread registrationThread{
         registerWithNameServer,
         std::string{argv[1]}, nameServerPort, std::string{SERVICE_NAME}, providerId, PORT

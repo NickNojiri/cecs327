@@ -46,11 +46,15 @@ void reapUnresponsiveProviders(SharedRegistry& registry, int timeoutSeconds) {
             std::vector<ServiceProvider>& providers{serviceIt->second};
 
             for (auto providerIt{providers.begin()}; providerIt != providers.end();) {
-                const auto elapsedSeconds{
-                    std::chrono::duration_cast<std::chrono::seconds>(now - providerIt->lastHeartbeat).count()
-                };
+                // Compare the full-precision duration against the timeout so the
+                // limit means exactly what it says. (Truncating to whole seconds
+                // first would make the effective timeout up to a second longer.)
+                const auto silence{now - providerIt->lastHeartbeat};
 
-                if (elapsedSeconds > timeoutSeconds) {
+                if (silence > std::chrono::seconds(timeoutSeconds)) {
+                    const auto elapsedSeconds{
+                        std::chrono::duration_cast<std::chrono::seconds>(silence).count()
+                    };
                     std::cout << "Removing unresponsive provider '" << providerIt->identifier
                               << "' from service '" << serviceIt->first << "' ("
                               << elapsedSeconds << "s since last heartbeat)\n";
