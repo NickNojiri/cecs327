@@ -1,0 +1,22 @@
+#include "NameServerHandlers.h"
+#include <optional>
+std::vector<std::uint8_t> buildRegisterRequest(const std::string& serviceName,
+    const std::string& providerId, const std::string& address, std::int32_t port) {
+    std::vector<std::uint8_t> payload{static_cast<std::uint8_t>(NameServerRequestOpcode::Register)};
+    appendString(payload, serviceName);
+    appendString(payload, providerId);
+    appendString(payload, address);
+    appendInt32(payload, port);
+    return payload;
+}
+
+// Builds the payload for a Heartbeat request: the Heartbeat opcode followed by
+// the service name and provider identifier, each length-prefixed. The name
+// server uses these two strings to find the provider and refresh its timer.
+std::vector<std::uint8_t> buildHeartbeatRequest(const std::string& serviceName,
+    const std::string& providerId) {
+    std::vector<std::uint8_t> payload{static_cast<std::uint8_t>(NameServerRequestOpcode::Heartbeat)};
+    appendString(payload, serviceName);
+    appendString(payload, providerId);
+    return payload;
+}
